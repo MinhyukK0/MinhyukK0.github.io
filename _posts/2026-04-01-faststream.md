@@ -440,3 +440,13 @@ faststream run main:app --reload
 | **테스트** | 브로커 없이 In-Memory 테스트 |
 | **문서화** | AsyncAPI 스펙 자동 생성 |
 | **FastAPI 통합** | HTTP + Event를 한 서비스에서 처리 |
+
+## References
+
+- [FastStream Documentation](https://faststream.airt.ai/latest/)
+- [FastStream - Getting Started](https://faststream.airt.ai/latest/getting-started/)
+- [FastStream - Kafka Broker](https://faststream.airt.ai/latest/kafka/)
+- [FastStream - Dependency Injection](https://faststream.airt.ai/latest/getting-started/dependencies/)
+- [FastStream - Middleware](https://faststream.airt.ai/latest/getting-started/middlewares/)
+- [FastStream GitHub Repository](https://github.com/ag2ai/faststream)
+- [AsyncAPI Specification](https://www.asyncapi.com/)
