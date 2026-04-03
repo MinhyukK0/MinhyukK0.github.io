@@ -7,7 +7,9 @@ tags: [iceberg, cdc, copy-on-write, merge-on-read, spark, dagster]
 
 ## 문제 상황
 
-Dagster + Spark 클러스터 환경에서 CDC 데이터를 Iceberg 테이블에 micro-batch로 적재하고 있었다. 운영 중 S3 스토리지가 예상보다 훨씬 빠르게 증가했고, 특정 테이블은 원본 DB 대비 수배에 달하는 용량을 차지하고 있었다.
+Spark 4.0 + Iceberg 1.10.1로 CDC 데이터를 적재하고, Trino 467에서 Glue Catalog를 통해 조회하는 구조다. Dagster가 전체 파이프라인을 오케스트레이션한다.
+
+운영 중 S3 스토리지가 예상보다 훨씬 빠르게 증가했고, 특정 테이블은 원본 DB 대비 수배에 달하는 용량을 차지하고 있었다.
 
 원인은 Iceberg의 기본 Update 전략인 **Copy-on-Write(COW)**가 CDC 워크로드와 맞지 않았기 때문이다.
 
@@ -71,6 +73,8 @@ COW의 파일 재작성은 Spark executor에서 수행된다. micro-batch마다 
 ## MOR 전환
 
 ### 설정 변경
+
+MOR은 Iceberg format-version v2 이상에서만 지원된다.
 
 ```sql
 ALTER TABLE catalog.db.table_name SET TBLPROPERTIES (
