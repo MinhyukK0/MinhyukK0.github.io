@@ -1,7 +1,7 @@
 ---
 title: "Iceberg CDC 환경에서 COW → MOR 전환기"
 date: 2026-04-03 14:00:00 +0900
-categories: [Troubleshooting]
+categories: [TroubleShooting]
 tags: [iceberg, cdc, copy-on-write, merge-on-read, spark, dagster]
 ---
 
