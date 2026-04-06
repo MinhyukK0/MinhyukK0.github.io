@@ -143,8 +143,16 @@ serviceAccount:
 ```
 
 IAM Role에 필요한 권한:
+
+**조회 전용 (SELECT)**
 - **Glue**: `GetDatabase`, `GetDatabases`, `GetTable`, `GetTables`, `GetPartition`, `GetPartitions`, `BatchGetPartition`
 - **S3**: `GetObject`, `ListBucket`, `GetBucketLocation`
+
+테이블 속성 변경(`ALTER TABLE SET PROPERTIES`)이나 maintenance(`optimize`, `expire_snapshots`, `remove_orphan_files`)를 Trino에서 수행하려면 쓰기 권한이 추가로 필요하다.
+
+**테이블 관리 / Maintenance 수행 시 추가 권한**
+- **Glue**: `UpdateTable`, `DeleteTableVersion`, `BatchDeleteTableVersion`
+- **S3**: `PutObject`, `DeleteObject`
 
 ### Iceberg 테이블 관리
 
