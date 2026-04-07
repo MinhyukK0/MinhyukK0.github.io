@@ -45,34 +45,117 @@ Controller (StatefulSet, 1 replica)
 
 관리 영역과 실행 영역을 분리하여 RBAC 범위를 최소화한다.
 
-## CRD (Custom Resource Definitions)
+## 주요 컴포넌트
 
-Agent Sandbox는 4개의 CRD를 정의한다.
+### Controller
 
-### Sandbox
-
-개별 Sandbox 인스턴스다. Controller가 이 리소스를 감시하고 해당하는 Pod를 생성한다.
+Sandbox 리소스의 생애주기를 관리하는 핵심 컴포넌트다. CRD를 감시(watch)하여 Sandbox 리소스가 생성되면 Pod를 생성하고, 삭제되면 정리한다. `--extensions` 플래그로 SandboxClaim, SandboxTemplate, SandboxWarmPool 기능을 활성화한다.
 
 ```yaml
-apiVersion: agents.x-k8s.io/v1alpha1
-kind: Sandbox
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
-  name: my-sandbox
-  namespace: agent-sandbox
+  name: agent-sandbox-controller
+  namespace: agent-sandbox-system
 spec:
-  # Sandbox 스펙 정의
+  replicas: 1
+  template:
+    spec:
+      containers:
+      - args:
+        - --extensions
+        image: registry.k8s.io/agent-sandbox/agent-sandbox-controller:v0.1.0
+      nodeSelector:
+        node-group: ops
+      serviceAccountName: agent-sandbox-controller
+      tolerations:
+      - effect: NoSchedule
+        key: node-group
+        operator: Equal
+        value: ops
+```
+
+Controller의 RBAC는 두 가지 ClusterRole로 구성된다.
+
+**Base Role** — Pod, Service, PVC, Sandbox 리소스 관리:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: agent-sandbox-controller
+rules:
+- apiGroups: ['']
+  resources: [persistentvolumeclaims, pods, services]
+  verbs: [create, delete, get, list, patch, update, watch]
+- apiGroups: [agents.x-k8s.io]
+  resources: [sandboxes]
+  verbs: [create, delete, get, list, patch, update, watch]
+- apiGroups: [agents.x-k8s.io]
+  resources: [sandboxes/status]
+  verbs: [get, patch, update]
+```
+
+**Extensions Role** — SandboxClaim, SandboxWarmPool 관리, SandboxTemplate 읽기:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: agent-sandbox-controller-extensions
+rules:
+- apiGroups: [extensions.agents.x-k8s.io]
+  resources: [sandboxclaims, sandboxwarmpools]
+  verbs: [create, delete, get, list, patch, update, watch]
+- apiGroups: [extensions.agents.x-k8s.io]
+  resources: [sandboxclaims/status, sandboxwarmpools/status]
+  verbs: [get, patch, update]
+- apiGroups: [extensions.agents.x-k8s.io]
+  resources: [sandboxtemplates]
+  verbs: [get, list, watch]
+```
+
+### Router
+
+클라이언트 요청을 해당 Sandbox Pod로 라우팅한다. 공식 매니페스트에 포함되어 있지 않아 별도로 구성했다.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sandbox-router
+  namespace: agent-sandbox-system
+spec:
+  replicas: 2
+  template:
+    spec:
+      nodeSelector:
+        node-group: ops
+      containers:
+        - name: router
+          image: <ECR>/agent-sandbox:router-0.1.10
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
 ```
 
 ### SandboxTemplate
 
-Sandbox의 템플릿이다. 재사용 가능한 Sandbox 스펙을 정의해두면 SandboxClaim에서 참조한다.
+재사용 가능한 Sandbox 스펙을 정의하는 템플릿이다. 런타임 이미지, 리소스 제한, ServiceAccount 등을 미리 정의해두면 SandboxClaim에서 참조하여 일관된 Sandbox를 생성할 수 있다.
 
 ### SandboxClaim
 
-SandboxTemplate을 참조하여 Sandbox를 요청한다. PVC(PersistentVolumeClaim)가 PV를 요청하는 패턴과 유사하다.
+SandboxTemplate을 참조하여 Sandbox를 요청한다. PVC가 PV를 요청하는 패턴과 유사하다.
 
 ```
-SandboxTemplate (스펙 정의) ← SandboxClaim (요청) → Sandbox (인스턴스 생성)
+SandboxTemplate (스펙 정의) ← SandboxClaim (요청) → Controller → Sandbox Pod 생성
 ```
 
 ### SandboxWarmPool
