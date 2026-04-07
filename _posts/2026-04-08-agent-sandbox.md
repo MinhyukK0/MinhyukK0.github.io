@@ -358,8 +358,8 @@ from agentic_sandbox import SandboxClient
 with SandboxClient(
     template_name="runtime-my-template",
     namespace="agent-sandbox",
-    api_url="http://sandbox-router-svc.agent-sandbox-system:8080",
-    server_port=8000
+    api_url="http://sandbox-router-svc.agent-sandbox-system:8080",  # Router 접근 주소
+    server_port=8000  # Sandbox Pod 내부 런타임 포트 (Router 포트와 다름)
 ) as client:
 
     # 1. 명령 실행
