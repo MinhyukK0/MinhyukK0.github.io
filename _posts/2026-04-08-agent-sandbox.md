@@ -117,7 +117,7 @@ rules:
 
 ### Router
 
-클라이언트 요청을 해당 Sandbox Pod로 라우팅한다. 공식 매니페스트에 포함되어 있지 않아 별도로 구성했다.
+클라이언트 요청을 `X-Sandbox-ID` 헤더 기반으로 해당 Sandbox Pod로 라우팅하는 reverse proxy다. 공식 매니페스트에 포함되어 있지 않아 별도로 구성했다. [kubernetes-sigs/agent-sandbox](https://github.com/kubernetes-sigs/agent-sandbox)의 Router 소스코드를 베이스로 커스터마이징하여 ECR에 빌드한다.
 
 ```yaml
 apiVersion: apps/v1
@@ -149,6 +149,8 @@ spec:
 ### SandboxTemplate
 
 재사용 가능한 Sandbox 스펙을 정의하는 템플릿이다. 런타임 이미지, 리소스 제한, ServiceAccount 등을 미리 정의해두면 SandboxClaim에서 참조하여 일관된 Sandbox를 생성할 수 있다.
+
+런타임 이미지는 베이스 이미지를 기반으로 용도에 맞게 커스터마이징한다. 예를 들어 데이터 분석용 런타임이라면 베이스에 pandas, polars, numpy, sqlalchemy, boto3, httpx 등 필요한 패키지를 추가하고 DB 연결 설정을 내장하여 별도 이미지로 빌드한다.
 
 ### SandboxClaim
 
