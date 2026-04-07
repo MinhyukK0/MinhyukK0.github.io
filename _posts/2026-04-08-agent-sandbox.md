@@ -348,6 +348,39 @@ metadata:
 - **Glue**: 데이터베이스/테이블 메타데이터 조회
 - **S3**: 쿼리 결과 버킷 읽기/쓰기, 데이터 소스 버킷 읽기
 
+## 사용 예시
+
+전용 SDK 클라이언트(`SandboxClient`)로 Sandbox를 생성하고, 코드 실행 및 파일 입출력을 수행한다.
+
+```python
+from agentic_sandbox import SandboxClient
+
+with SandboxClient(
+    template_name="runtime-my-template",
+    namespace="agent-sandbox",
+    api_url="http://sandbox-router-svc.agent-sandbox-system:8080",
+    server_port=8000
+) as client:
+
+    # 1. 명령 실행
+    result = client.run('python3 -c "print(1+1)"')
+    print(result.stdout)   # "2\n"
+    print(result.exit_code) # 0
+
+    # 2. 파일 작성 후 실행
+    client.write("script.py", """
+import pandas as pd
+print(pd.__version__)
+""")
+    result = client.run("python3 /app/script.py")
+    print(result.stdout)   # "2.2.3\n"
+
+    # 3. 파일 읽기
+    content = client.read("script.py")
+```
+
+`with` 블록 진입 시 SandboxClaim을 생성하여 Pod를 할당받고, 블록을 벗어나면 자동으로 정리된다.
+
 ## 일반 컨테이너 vs Agent Sandbox
 
 | 항목 | 일반 컨테이너 | Agent Sandbox (gVisor) |
