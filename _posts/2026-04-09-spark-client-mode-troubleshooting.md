@@ -1,7 +1,7 @@
 ---
 title: "Spark Client Mode on K8s - 드라이버 리소스 트러블슈팅"
 date: 2026-04-09 14:00:00 +0900
-categories: [Troubleshooting]
+categories: [TroubleShooting]
 tags: [spark, kubernetes, dagster, iceberg, client-mode]
 ---
 
