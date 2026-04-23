@@ -32,7 +32,7 @@ CDC(Change Data Capture)는 소스 데이터베이스의 변경 사항을 감지
 전체 파이프라인은 다음과 같다.
 
 ```
-RDS (WAL/binlog) → AWS DMS (CDC) → MSK Serverless (Kafka) → Dagster + Spark (micro-batch) → Apache Iceberg
+RDS (WAL/binlog) → AWS DMS (CDC) → MSK (Kafka) → Dagster + Spark (micro-batch) → Apache Iceberg
 ```
 
 각 컴포넌트의 상세 역할은 아래에서 다룬다.
@@ -102,9 +102,9 @@ DMS가 MSK로 보내는 메시지는 JSON 형태이며, 크게 Data Record와 Co
 
 Control Record의 `operation`으로는 `create-table`, `drop-table`, `add-column`, `drop-column` 등이 있다.
 
-### MSK Serverless
+### MSK
 
-Kafka 브로커 관리 없이 사용할 수 있는 서버리스 Kafka다. 스케일링이나 패치를 신경 쓸 필요가 없다는 장점이 있지만, **Schema Registry를 지원하지 않는다**. 그래서 메시지 스키마 검증이나 진화(evolution)를 Kafka 레벨에서 처리할 수 없고, consumer 코드에서 직접 대응해야 한다.
+처음에는 MSK Serverless를 사용하려 했으나, DMS가 MSK Serverless를 타겟으로 지원하지 않아 MSK Provisioned로 전환했다. 브로커 관리가 필요하다는 단점이 있지만, DMS와의 호환성이 보장된다. 다만 MSK Provisioned에서도 **Schema Registry를 별도로 구성하지 않았기 때문에**, 메시지 스키마 검증이나 진화(evolution)를 Kafka 레벨에서 처리할 수 없고 consumer 코드에서 직접 대응해야 한다.
 
 ### Dagster + Spark (Micro-batch)
 
@@ -133,7 +133,7 @@ CDC 파이프라인에서 가장 까다로운 부분 중 하나가 소스 DB의 
 
 ### Schema Registry가 없는 상황
 
-MSK Serverless를 사용하고 있어서 Schema Registry를 쓸 수 없다. Schema Registry가 있었다면 메시지 스키마의 호환성 검증이나 진화를 Kafka 레벨에서 관리할 수 있었겠지만, 현재 구조에서는 consumer 코드에서 직접 대응해야 한다.
+MSK에 Schema Registry를 별도로 구성하지 않았다. Schema Registry가 있었다면 메시지 스키마의 호환성 검증이나 진화를 Kafka 레벨에서 관리할 수 있었겠지만, 현재 구조에서는 consumer 코드에서 직접 대응해야 한다.
 
 ### 코드 레벨에서의 처리
 
